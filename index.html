@@ -746,7 +746,6 @@
   .css-value { color: #89ddff; }
   .css-selector { color: #82aaff; }
   .css-atrule { color: #c792ea; }
-  .css-punct { color: #89ddff; }
   .css-bracket { color: #89ddff; }
 
   /* ─── NOTIFICATION TOAST ──────────────────────────── */
@@ -1416,8 +1415,7 @@
             Transparent User Modal
           </label>
           <div class="info-note transparent-bd-warning" id="transparent-bd-warning" style="display:none;">
-            <strong>BetterDiscord users:</strong> Transparent backgrounds require enabling <em>Enable Transparency</em> in Discord's Appearance settings, and launching Discord with <code>--enable-transparent-visuals</code>. On Vencord, transparency works automatically via the VibrancyEffect or TransparentBackground plugin.<br><br>
-            <strong>Other client mods:</strong> Transparent background support varies — refer to your client mod's documentation to enable it.
+            <strong>BetterDiscord users:</strong> Transparent backgrounds require enabling <em>Enable Transparency</em> in Discord's Appearance settings, and launching Discord with <code>--enable-transparent-visuals</code>. On Vencord, transparency works automatically via the VibrancyEffect or TransparentBackground plugin.
           </div>
         </div>
       </div>
@@ -1862,18 +1860,52 @@ function rgbToHex(r,g,b) {
   return '#' + [r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
 }
 function colorOpacityToRgba(color, opacity) {
-  const {r,g,b} = hexToRgb(color);
-  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+  const rgb = parseColorToRgb(color);
+  if (!rgb) return `rgba(0, 0, 0, ${opacity})`;
+  return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity})`;
 }
 function isHexColor(v) { return typeof v === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(v.trim()); }
 
-// Wraps multi-word font names in double quotes if not already quoted; strips existing quotes first
-function quoteFontName(fontStack) {
-  return fontStack.split(',').map(f => {
-    f = f.trim().replace(/^["']|["']$/g, ''); // strip any existing quotes
-    if (f.includes(' ')) return `"${f}"`;
-    return f;
-  }).join(', ');
+function hslToRgb(h, s, l) {
+  s /= 100; l /= 100;
+  const k = n => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  return { r: Math.round(f(0) * 255), g: Math.round(f(8) * 255), b: Math.round(f(4) * 255) };
+}
+
+function parseColorToRgb(color) {
+  if (!color || typeof color !== 'string') return null;
+  color = color.trim();
+  // Hex 6-digit
+  if (/^#[0-9a-fA-F]{6}$/.test(color)) return hexToRgb(color);
+  // Hex 3-digit
+  if (/^#[0-9a-fA-F]{3}$/.test(color)) {
+    return { r: parseInt(color[1]+color[1],16), g: parseInt(color[2]+color[2],16), b: parseInt(color[3]+color[3],16) };
+  }
+  // rgb / rgba
+  const rgbM = color.match(/rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)/);
+  if (rgbM) return { r: Math.round(parseFloat(rgbM[1])), g: Math.round(parseFloat(rgbM[2])), b: Math.round(parseFloat(rgbM[3])) };
+  // hsl / hsla
+  const hslM = color.match(/hsla?\(\s*([\d.]+)\s*,\s*([\d.]+)%?\s*,\s*([\d.]+)%?/);
+  if (hslM) return hslToRgb(parseFloat(hslM[1]), parseFloat(hslM[2]), parseFloat(hslM[3]));
+  // Browser fallback (handles named colors etc.)
+  try {
+    const el = document.createElement('div');
+    el.style.color = color;
+    document.body.appendChild(el);
+    const comp = getComputedStyle(el).color;
+    document.body.removeChild(el);
+    const m = comp.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+    if (m) return { r: parseInt(m[1]), g: parseInt(m[2]), b: parseInt(m[3]) };
+  } catch(e) {}
+  return null;
+}
+
+function isValidColor(v) {
+  if (!v || typeof v !== 'string') return false;
+  if (v.trim().startsWith('var(')) return false;
+  return parseColorToRgb(v.trim()) !== null;
 }
 
 function resolveChannelVar(val) {
@@ -1911,23 +1943,28 @@ function makeColorPicker(containerId, stateKey, onChange) {
         <div class="color-swatch" id="${containerId}-swatch"></div>
         <input type="color" id="${containerId}-picker">
       </div>
-      <input type="text" class="hex-input" id="${containerId}-hex" maxlength="30" placeholder="#000000">
+      <input type="text" class="hex-input" id="${containerId}-hex" maxlength="60" placeholder="#000000 or rgb() / hsl()">
     </div>`;
 
   const picker = document.getElementById(`${containerId}-picker`);
   const hexIn = document.getElementById(`${containerId}-hex`);
   const swatch = document.getElementById(`${containerId}-swatch`);
 
-  function setVal(hex) {
-    if (!hex) return;
-    const cleanHex = hex.startsWith('#') ? hex : '#' + hex;
-    if (isHexColor(cleanHex)) {
+  function setVal(val) {
+    if (val === undefined || val === null) return;
+    const v = String(val).trim();
+    if (isHexColor(v)) {
+      const cleanHex = v.startsWith('#') ? v : '#' + v;
       picker.value = cleanHex.length === 7 ? cleanHex : picker.value;
       swatch.style.background = cleanHex;
+    } else if (isValidColor(v)) {
+      swatch.style.background = v;
+      const rgb = parseColorToRgb(v);
+      if (rgb) picker.value = rgbToHex(rgb.r, rgb.g, rgb.b);
     }
-    hexIn.value = hex;
-    if (!stateKey.startsWith('_dummy_')) state[stateKey] = hex;
-    onChange(hex);
+    hexIn.value = v;
+    if (!stateKey.startsWith('_dummy_')) state[stateKey] = v;
+    onChange(v);
   }
 
   picker.addEventListener('input', () => {
@@ -1938,6 +1975,10 @@ function makeColorPicker(containerId, stateKey, onChange) {
     if (isHexColor(v)) {
       swatch.style.background = v;
       picker.value = v.length === 7 ? v : picker.value;
+    } else if (isValidColor(v)) {
+      swatch.style.background = v;
+      const rgb = parseColorToRgb(v);
+      if (rgb) picker.value = rgbToHex(rgb.r, rgb.g, rgb.b);
     }
     state[stateKey] = v;
     onChange(v);
@@ -2302,7 +2343,7 @@ function updatePreview() {
 
   // Mention color uses main color
   document.querySelectorAll('.mock-msg-mention').forEach(el => {
-    const {r,g,b} = hexToRgb(isHexColor(state.mainColor) ? state.mainColor : '#2780e6');
+    const {r,g,b} = parseColorToRgb(state.mainColor) || { r: 39, g: 128, b: 230 };
     el.style.background = `rgba(${r},${g},${b},0.25)`;
     el.style.color = `rgba(${r},${g},${b},1)`;
   });
@@ -2337,15 +2378,15 @@ function getImports() {
   if (state.platform === 'vencord' || state.platform === 'both')
     lines.push(`@import url("https://clearvision.github.io/ClearVision-v7/vencord.css");`);
   if (state.addonTitlebar)
-    lines.push(`@import url("https://discordstyles.github.io/Addons/windows-titlebar.css");`);
+    lines.push(`@import url('https://discordstyles.github.io/Addons/windows-titlebar.css');`);
   if (state.addonHorizontalServers)
-    lines.push(`@import url("https://discordstyles.github.io/HorizontalServerList/HorizontalServerList.css");`);
+    lines.push(`@import url('https://discordstyles.github.io/HorizontalServerList/HorizontalServerList.css');`);
   if (state.addonRadialStatus)
-    lines.push(`@import url("https://discordstyles.github.io/RadialStatus/RadialStatus.css");`);
+    lines.push(`@import url('https://discordstyles.github.io/RadialStatus/RadialStatus.css');`);
   if (state.addonDiscolored)
-    lines.push(`@import url("https://nyri4.github.io/Discolored/main.css");`);
+    lines.push(`@import url('https://nyri4.github.io/Discolored/main.css');`);
   if (state.addonServerColumns)
-    lines.push(`@import url("https://mwittrien.github.io/BetterDiscordAddons/Themes/ServerColumns/ServerColumns.css");`);
+    lines.push(`@import url('https://mwittrien.github.io/BetterDiscordAddons/Themes/ServerColumns/ServerColumns.css');`);
   return lines.join('\n');
 }
 
@@ -2438,8 +2479,8 @@ ${getImports()}
   --home-icon: url(${state.homeIcon}); /* home button icon (link must be HTTPS) [default: url(https://clearvision.github.io/icons/discord.svg)]*/
   --home-size: ${state.homeSize}; /* home button icon size [default: cover] */
   /* FONTS */
-  --main-font: ${quoteFontName(state.mainFont)}; /* main font for app [default: gg sans, Helvetica Neue, Helvetica, Arial, sans-serif] */
-  --code-font: ${quoteFontName(state.codeFont)}; /* font for codeblocks [default: Consolas, Liberation Mono, Menlo, Courier, monospace] */
+  --main-font: ${state.mainFont}; /* main font for app [default: gg sans, Helvetica Neue, Helvetica, Arial, sans-serif] */
+  --code-font: ${state.codeFont}; /* font for codeblocks [default: Consolas, Liberation Mono, Menlo, Courier, monospace] */
   /* CHANNEL COLORS */
   --channel-normal: ${state.channelNormal}; /* channel text color [default: var(--interactive-text-default)] */
   --channel-muted: ${state.channelMuted}; /* muted channel text color [default: var(--interactive-muted)] */
@@ -2475,14 +2516,14 @@ function updateCssOutput() {
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     // Comments
     .replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="css-comment">$1</span>')
-    // @ rules (anchored to line start, won't cross newlines or bleed into meta comment)
-    .replace(/^(@\w+[^{;\n]*)/gm, '<span class="css-atrule">$1</span>')
-    // Selectors (lines ending with {) — { excluded from span so punctuation rule colours it uniformly
-    .replace(/^([^{}\/\n@][^{}]*?)(\s*\{)/gm, '<span class="css-selector">$1</span><span class="css-punct">$2</span>')
-    // Closing braces
-    .replace(/^(\s*\})/gm, '<span class="css-punct">$1</span>')
-    // Properties + values combined — prevents matching https: inside url() strings
-    .replace(/(--[\w-]+)(\s*:\s*)([^;{}\n]+)(;)/g, '<span class="css-property">$1</span>$2<span class="css-value">$3</span>$4');
+    // @ rules
+    .replace(/(@\w+[^{;]*)/g, '<span class="css-atrule">$1</span>')
+    // Selectors (lines ending with {)
+    .replace(/^([^{}\/\n@][^{}]*\{)/gm, '<span class="css-selector">$1</span>')
+    // Properties
+    .replace(/(--[\w-]+)(\s*:)/g, '<span class="css-property">$1</span>$2')
+    // Values (after colon)
+    .replace(/:\s*([^;{}\n]+)(;)/g, ': <span class="css-value">$1</span>$2');
 
   document.getElementById('css-output').innerHTML = highlighted;
 }
