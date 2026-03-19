@@ -1906,7 +1906,7 @@ function isValidColor(v) {
 
 function isGradient(v) {
   if (!v || typeof v !== 'string') return false;
-  return /^\s*(linear|radial|conic)-gradient\s*\(/i.test(v.trim());
+  return /^\s*(repeating-)?(linear|radial|conic)-gradient\s*\(/i.test(v.trim());
 }
 
 // Build the CSS value for --background-image (and equivalent popout/modal vars)
