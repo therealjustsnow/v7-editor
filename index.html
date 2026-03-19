@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>ClearVision V7 — Theme Editor</title>
+<title>v7 Editor</title>
+<link rel="icon" type="image/png" href="https://avatars.githubusercontent.com/u/51228765?s=200&v=4">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -26,10 +27,13 @@
     --ed-radius: 8px;
     --ed-radius-sm: 5px;
     --sidebar-w: 340px;
+    /* Updated dynamically from the theme's main/hover colors */
+    --theme-main: #2780e6;
+    --theme-hover: #1e63b3;
   }
 
   html, body { height: 100%; background: var(--ed-bg); color: var(--ed-text); font-family: 'Manrope', sans-serif; font-size: 13px; overflow: hidden; }
-  #app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+  #app { display: flex; flex-direction: column; position: fixed; inset: 0; }
 
   /* ─── HEADER ─────────────────────────────────────── */
   #topbar {
@@ -216,6 +220,13 @@
     transition: transform 0.2s;
     opacity: 0.5;
     font-size: 10px;
+  }
+  .sec-icon {
+    color: var(--theme-main);
+    font-size: 13px;
+    line-height: 1;
+    flex-shrink: 0;
+    transition: color 0.15s;
   }
   .section.open .section-header { color: var(--ed-text); }
   .section.open .section-chevron { transform: rotate(90deg); }
@@ -406,8 +417,8 @@
     transition: all 0.15s;
     letter-spacing: 0.3px;
   }
-  .view-tab:hover { color: var(--ed-text); }
-  .view-tab.active { color: var(--ed-text); border-bottom-color: var(--ed-accent); }
+  .view-tab:hover { color: var(--ed-text); border-bottom-color: color-mix(in srgb, var(--theme-main) 40%, transparent); }
+  .view-tab.active { color: var(--ed-text); border-bottom-color: var(--theme-main); }
 
   .view-pane { display: none; flex: 1; overflow: hidden; }
   .view-pane.active { display: flex; }
@@ -740,7 +751,7 @@
   /* ─── NOTIFICATION TOAST ──────────────────────────── */
   #toast {
     position: fixed;
-    bottom: 24px; left: 50%; transform: translateX(-50%) translateY(60px);
+    bottom: 24px; left: 50%; transform: translateX(-50%) translateY(0);
     background: var(--ed-success);
     color: #fff;
     padding: 10px 20px;
@@ -748,11 +759,13 @@
     font-size: 13px;
     font-weight: 600;
     z-index: 9999;
-    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s, visibility 0.25s;
     pointer-events: none;
     box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    opacity: 0;
+    visibility: hidden;
   }
-  #toast.show { transform: translateX(-50%) translateY(0); }
+  #toast.show { opacity: 1; visibility: visible; }
 
   /* ─── RESPONSIVE helper ───────────────────────────── */
   .mock-members { display: flex; }
@@ -791,16 +804,21 @@
     padding: 0;
     position: relative;
   }
-  .mnav-btn.active { color: var(--ed-accent); }
+  .mnav-btn:hover:not(.active) { color: var(--theme-hover); }
+  .mnav-btn.active { color: var(--theme-main); }
   .mnav-btn.active::after {
     content: '';
     position: absolute;
     top: 0; left: 20%; right: 20%;
     height: 2px;
-    background: var(--ed-accent);
+    background: var(--theme-main);
     border-radius: 0 0 3px 3px;
   }
-  .mnav-icon { font-size: 18px; line-height: 1; }
+  .mnav-icon {
+    width: 20px; height: 20px;
+    display: block;
+    fill: currentColor;
+  }
 
   @media (max-width: 680px) {
     html, body { overflow: hidden; }
@@ -1024,7 +1042,7 @@
       <!-- ACCENT COLORS -->
       <div class="section open" id="sec-accent">
         <div class="section-header" onclick="toggleSection('sec-accent')">
-          <span>🎨</span> Accent Colors
+          <span class="sec-icon">◈</span> Accent Colors
           <span class="section-chevron">▶</span>
         </div>
         <div class="section-body">
@@ -1050,7 +1068,7 @@
       <!-- STATUS COLORS -->
       <div class="section" id="sec-status">
         <div class="section-header" onclick="toggleSection('sec-status')">
-          <span>🟢</span> Status Colors
+          <span class="sec-icon">◉</span> Status Colors
           <span class="section-chevron">▶</span>
         </div>
         <div class="section-body">
@@ -1080,7 +1098,7 @@
       <!-- BACKGROUND -->
       <div class="section open" id="sec-bg">
         <div class="section-header" onclick="toggleSection('sec-bg')">
-          <span>🖼️</span> App Background
+          <span class="sec-icon">▣</span> App Background
           <span class="section-chevron">▶</span>
         </div>
         <div class="section-body">
@@ -1153,7 +1171,7 @@
       <!-- USER POPOUT BG -->
       <div class="section" id="sec-popout">
         <div class="section-header" onclick="toggleSection('sec-popout')">
-          <span>👤</span> User Popout Background
+          <span class="sec-icon">◯</span> User Popout Background
           <span class="section-chevron">▶</span>
         </div>
         <div class="section-body">
@@ -1191,7 +1209,7 @@
       <!-- USER MODAL BG -->
       <div class="section" id="sec-modal">
         <div class="section-header" onclick="toggleSection('sec-modal')">
-          <span>📋</span> User Modal Background
+          <span class="sec-icon">▤</span> User Modal Background
           <span class="section-chevron">▶</span>
         </div>
         <div class="section-body">
@@ -1229,7 +1247,7 @@
       <!-- HOME ICON -->
       <div class="section" id="sec-home">
         <div class="section-header" onclick="toggleSection('sec-home')">
-          <span>🏠</span> Home Icon
+          <span class="sec-icon">⌂</span> Home Icon
           <span class="section-chevron">▶</span>
         </div>
         <div class="section-body">
@@ -1309,7 +1327,7 @@
       <!-- SHADING -->
       <div class="section" id="sec-shading">
         <div class="section-header" onclick="toggleSection('sec-shading')">
-          <span>🌫️</span> Panel Shading
+          <span class="sec-icon">▨</span> Panel Shading
           <span class="section-chevron">▶</span>
         </div>
         <div class="section-body">
@@ -1346,10 +1364,89 @@
         </div>
       </div>
 
+      <!-- ADDONS -->
+      <div class="section" id="sec-addons">
+        <div class="section-header" onclick="toggleSection('sec-addons')">
+          <span class="sec-icon">⊕</span> Optional Addons
+          <span class="section-chevron">▶</span>
+        </div>
+        <div class="section-body">
+          <div class="info-note">These addons are maintained separately. Enable them to include the required <code>@import</code> in your CSS.</div>
+          <label class="check-row">
+            <input type="checkbox" id="addon-titlebar" onchange="state.addonTitlebar=this.checked; updateCssOutput()">
+            Windows Titlebar — moves window controls into the header
+          </label>
+          <label class="check-row">
+            <input type="checkbox" id="addon-hsl" onchange="state.addonHorizontalServers=this.checked; if(this.checked){ state.addonServerColumns=false; document.getElementById('addon-servercolumns').checked=false; } updateCssOutput()">
+            Horizontal Server List
+          </label>
+          <label class="check-row">
+            <input type="checkbox" id="addon-radial" onchange="state.addonRadialStatus=this.checked; updateCssOutput()">
+            Radial Status — circular status indicators
+          </label>
+          <label class="check-row">
+            <input type="checkbox" id="addon-discolored" onchange="state.addonDiscolored=this.checked; updateCssOutput()">
+            Discolored — colored icons &amp; UI elements
+          </label>
+          <label class="check-row">
+            <input type="checkbox" id="addon-servercolumns" onchange="state.addonServerColumns=this.checked; if(this.checked){ state.addonHorizontalServers=false; document.getElementById('addon-hsl').checked=false; } updateCssOutput()">
+            Server Columns — multi-column server list
+          </label>
+        </div>
+      </div>
+
+      <!-- TRANSPARENT BACKGROUNDS -->
+      <div class="section" id="sec-transparent">
+        <div class="section-header" onclick="toggleSection('sec-transparent')">
+          <span class="sec-icon">▭</span> Transparent Backgrounds
+          <span class="section-chevron">▶</span>
+        </div>
+        <div class="section-body">
+          <label class="check-row">
+            <input type="checkbox" id="bg-transparent" onchange="state.bgTransparent=this.checked; showTransparentWarning(); updateCssOutput()">
+            Transparent App Background
+          </label>
+          <label class="check-row">
+            <input type="checkbox" id="popout-transparent" onchange="state.popoutTransparent=this.checked; showTransparentWarning(); updateCssOutput()">
+            Transparent User Popout
+          </label>
+          <label class="check-row">
+            <input type="checkbox" id="modal-transparent" onchange="state.modalTransparent=this.checked; showTransparentWarning(); updateCssOutput()">
+            Transparent User Modal
+          </label>
+          <div class="info-note transparent-bd-warning" id="transparent-bd-warning" style="display:none;">
+            <strong>BetterDiscord users:</strong> Transparent backgrounds require enabling <em>Enable Transparency</em> in Discord's Appearance settings, and launching Discord with <code>--enable-transparent-visuals</code>. On Vencord, transparency works automatically via the VibrancyEffect or TransparentBackground plugin.
+          </div>
+        </div>
+      </div>
+
+      <!-- IMPORT EXISTING CSS -->
+      <div class="section" id="sec-import">
+        <div class="section-header" onclick="toggleSection('sec-import')">
+          <span class="sec-icon">▷</span> Import Existing Theme
+          <span class="section-chevron">▶</span>
+        </div>
+        <div class="section-body">
+          <div class="info-note">Upload a ClearVision CSS file to populate the editor with its settings. Unknown values are left unchanged.</div>
+          <label style="display:flex;flex-direction:column;gap:8px;cursor:pointer;">
+            <div id="import-dropzone" style="border:2px dashed var(--ed-border-strong);border-radius:var(--ed-radius);padding:20px;text-align:center;color:var(--ed-muted);font-size:12px;transition:border-color 0.15s,color 0.15s;cursor:pointer;"
+              ondragover="event.preventDefault();this.style.borderColor='var(--theme-main)';this.style.color='var(--ed-text)';"
+              ondragleave="this.style.borderColor='';this.style.color='';"
+              ondrop="event.preventDefault();this.style.borderColor='';this.style.color='';handleCssImport(event.dataTransfer.files[0]);">
+              <div style="font-size:24px;margin-bottom:6px;">⬆️</div>
+              Drop a .css file here or click to browse
+            </div>
+            <input type="file" accept=".css,text/css" style="display:none" id="import-file-input" onchange="handleCssImport(this.files[0])">
+          </label>
+          <button class="btn btn-outline" style="width:100%" onclick="document.getElementById('import-file-input').click()">Browse for CSS file…</button>
+          <div id="import-result" style="display:none;font-size:11px;padding:8px 10px;border-radius:var(--ed-radius-sm);background:var(--ed-control);color:var(--ed-text);line-height:1.6;"></div>
+        </div>
+      </div>
+
       <!-- CUSTOM CSS -->
       <div class="section" id="sec-custom">
         <div class="section-header" onclick="toggleSection('sec-custom')">
-          <span>✏️</span> Additional CSS
+          <span class="sec-icon">✦</span> Additional CSS
           <span class="section-chevron">▶</span>
         </div>
         <div class="section-body">
@@ -1544,19 +1641,19 @@
   <nav id="mobile-nav">
     <div id="mobile-nav-inner">
       <button class="mnav-btn active" id="mnav-editor" onclick="mobileTab('editor')">
-        <span class="mnav-icon">✏️</span>
+        <svg class="mnav-icon" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
         Editor
       </button>
       <button class="mnav-btn" id="mnav-preview" onclick="mobileTab('preview')">
-        <span class="mnav-icon">👁️</span>
+        <svg class="mnav-icon" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
         Preview
       </button>
       <button class="mnav-btn" id="mnav-css" onclick="mobileTab('css')">
-        <span class="mnav-icon">📄</span>
+        <svg class="mnav-icon" viewBox="0 0 24 24"><path d="M9.4 16.6 4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0 4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>
         CSS
       </button>
       <button class="mnav-btn" id="mnav-export" onclick="openMobileSettings()">
-        <span class="mnav-icon">⬇️</span>
+        <svg class="mnav-icon" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
         Export
       </button>
     </div>
@@ -1652,6 +1749,18 @@ const state = {
   channelUnreadHover: 'var(--hover-color)',
 
   customCss: '',
+
+  // Addons
+  addonTitlebar: false,
+  addonHorizontalServers: false,
+  addonRadialStatus: false,
+  addonDiscolored: false,
+  addonServerColumns: false,
+
+  // Transparent backgrounds
+  bgTransparent: false,
+  popoutTransparent: false,
+  modalTransparent: false,
 
   // Per-theme shading
   shading: {
@@ -2084,6 +2193,10 @@ function updatePreview() {
   const bgUrl = state.bgUrl;
   const bgStyle = bgUrl ? `url(${bgUrl}) center/cover no-repeat` : '#1a1b1f';
 
+  // Sync theme color CSS vars so mobile nav + any CSS consumers stay in sync
+  document.documentElement.style.setProperty('--theme-main', state.mainColor);
+  document.documentElement.style.setProperty('--theme-hover', state.hoverColor);
+
   // Background
   document.getElementById('mock-bg').style.background = bgStyle;
 
@@ -2206,17 +2319,23 @@ function buildFilterValue() {
 }
 
 function getImports() {
-  if (state.platform === 'bd') {
-    return `@import url("https://clearvision.github.io/ClearVision-v7/main.css");
-@import url("https://clearvision.github.io/ClearVision-v7/betterdiscord.css");`;
-  } else if (state.platform === 'vencord') {
-    return `@import url("https://clearvision.github.io/ClearVision-v7/main.css");
-@import url("https://clearvision.github.io/ClearVision-v7/vencord.css");`;
-  } else {
-    return `@import url("https://clearvision.github.io/ClearVision-v7/main.css");
-@import url("https://clearvision.github.io/ClearVision-v7/betterdiscord.css");
-@import url("https://clearvision.github.io/ClearVision-v7/vencord.css");`;
-  }
+  let lines = [];
+  lines.push(`@import url("https://clearvision.github.io/ClearVision-v7/main.css");`);
+  if (state.platform === 'bd' || state.platform === 'both')
+    lines.push(`@import url("https://clearvision.github.io/ClearVision-v7/betterdiscord.css");`);
+  if (state.platform === 'vencord' || state.platform === 'both')
+    lines.push(`@import url("https://clearvision.github.io/ClearVision-v7/vencord.css");`);
+  if (state.addonTitlebar)
+    lines.push(`@import url('https://discordstyles.github.io/Addons/windows-titlebar.css');`);
+  if (state.addonHorizontalServers)
+    lines.push(`@import url('https://discordstyles.github.io/HorizontalServerList/HorizontalServerList.css');`);
+  if (state.addonRadialStatus)
+    lines.push(`@import url('https://discordstyles.github.io/RadialStatus/RadialStatus.css');`);
+  if (state.addonDiscolored)
+    lines.push(`@import url('https://nyri4.github.io/Discolored/main.css');`);
+  if (state.addonServerColumns)
+    lines.push(`@import url('https://mwittrien.github.io/BetterDiscordAddons/Themes/ServerColumns/ServerColumns.css');`);
+  return lines.join('\n');
 }
 
 function getMeta() {
@@ -2252,18 +2371,21 @@ ${themeClass} {
 }
 
 function generateCSS() {
-  const popoutImage = state.popoutLinkBg ? 'var(--background-image)' : `url(${state.popoutUrl})`;
+  const popoutImage = state.popoutTransparent ? 'none' :
+                      state.popoutLinkBg ? 'var(--background-image)' : `url(${state.popoutUrl})`;
   const popoutPosition = state.popoutLinkBg ? 'var(--background-position)' : state.popoutPosition;
   const popoutSize = state.popoutLinkBg ? 'var(--background-size)' : state.popoutSize;
   const popoutAttachment = state.popoutLinkBg ? 'var(--background-attachment)' : state.popoutAttachment;
   const popoutFilter = state.popoutLinkBg ? 'var(--background-filter)' : 'none';
 
-  const modalImage = state.modalLinkBg ? 'var(--background-image)' : `url(${state.modalUrl})`;
+  const modalImage = state.modalTransparent ? 'none' :
+                     state.modalLinkBg ? 'var(--background-image)' : `url(${state.modalUrl})`;
   const modalPosition = state.modalLinkBg ? 'var(--background-position)' : state.modalPosition;
   const modalSize = state.modalLinkBg ? 'var(--background-size)' : state.modalSize;
   const modalAttachment = state.modalLinkBg ? 'var(--background-attachment)' : state.modalAttachment;
   const modalFilter = state.modalLinkBg ? 'var(--background-filter)' : 'none';
 
+  const bgImageVal = state.bgTransparent ? 'none' : `url(${state.bgUrl})`;
   const filterVal = buildFilterValue();
 
   let css = `${getMeta()}
@@ -2284,7 +2406,7 @@ ${getImports()}
   --offline-color: ${state.offlineColor}; /* offline/invisible status color (hex, rgb or hsl) [default: #808080] */
   /* APP BACKGROUND */
   --background-shading-percent: ${state.bgShadingPct}%; /* app background shading amount (0 for complete smoothness) [default: 100%] */
-  --background-image: url(${state.bgUrl}); /* app background image (link must be HTTPS) [default: url(https://clearvision.github.io/images/sapphire.jpg)]*/
+  --background-image: ${bgImageVal}; /* app background image (link must be HTTPS) [default: url(https://clearvision.github.io/images/sapphire.jpg)]*/
   --background-position: ${state.bgPosition}; /* app background position [default: center] */
   --background-size: ${state.bgSize}; /* app background size (px) [default: cover] */
   --background-attachment: ${state.bgAttachment}; /* app background attachment [default: fixed] */
@@ -2428,6 +2550,181 @@ function showToast(msg) {
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ─── TRANSPARENT WARNING ──────────────────────────────────────────────
+function showTransparentWarning() {
+  const anyOn = state.bgTransparent || state.popoutTransparent || state.modalTransparent;
+  const warn = document.getElementById('transparent-bd-warning');
+  if (warn) warn.style.display = anyOn ? 'block' : 'none';
+}
+
+// ─── CSS IMPORT PARSER ────────────────────────────────────────────────
+function handleCssImport(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const css = e.target.result;
+    const applied = [];
+    const skipped = [];
+
+    function extract(varName) {
+      const m = css.match(new RegExp(`--${varName}\\s*:\\s*([^;]+);`));
+      return m ? m[1].trim() : null;
+    }
+
+    // Color vars
+    const colorMap = {
+      'main-color': 'mainColor', 'hover-color': 'hoverColor',
+      'success-color': 'successColor', 'danger-color': 'dangerColor',
+      'online-color': 'onlineColor', 'idle-color': 'idleColor',
+      'dnd-color': 'dndColor', 'streaming-color': 'streamingColor',
+      'offline-color': 'offlineColor',
+    };
+    Object.entries(colorMap).forEach(([cssVar, stateKey]) => {
+      const v = extract(cssVar);
+      if (v && isHexColor(v)) { state[stateKey] = v; applied.push(`--${cssVar}`); }
+      else if (v) skipped.push(`--${cssVar} (${v})`);
+    });
+
+    // Background image URL
+    const bgImg = extract('background-image');
+    if (bgImg) {
+      const urlMatch = bgImg.match(/url\(['"]?([^'")\s]+)['"]?\)/);
+      if (urlMatch) { state.bgUrl = urlMatch[1]; applied.push('--background-image'); }
+    }
+
+    // Shading percent
+    const pct = extract('background-shading-percent');
+    if (pct) { state.bgShadingPct = parseInt(pct); applied.push('--background-shading-percent'); }
+
+    // Background props
+    const bgPos = extract('background-position');
+    if (bgPos) { state.bgPosition = bgPos; applied.push('--background-position'); }
+    const bgSize = extract('background-size');
+    if (bgSize) { state.bgSize = bgSize; applied.push('--background-size'); }
+    const bgAtt = extract('background-attachment');
+    if (bgAtt) { state.bgAttachment = bgAtt; applied.push('--background-attachment'); }
+
+    // Home icon
+    const homeImg = extract('home-icon');
+    if (homeImg) {
+      const urlM = homeImg.match(/url\(['"]?([^'")\s]+)['"]?\)/);
+      if (urlM) { state.homeIcon = urlM[1]; applied.push('--home-icon'); }
+    }
+    const homeSize = extract('home-size');
+    if (homeSize) { state.homeSize = homeSize; applied.push('--home-size'); }
+
+    // Fonts
+    const mFont = extract('main-font');
+    if (mFont) { state.mainFont = mFont; applied.push('--main-font'); }
+    const cFont = extract('code-font');
+    if (cFont) { state.codeFont = cFont; applied.push('--code-font'); }
+
+    // Channel colors
+    const chMap = {
+      'channel-normal': 'channelNormal', 'channel-muted': 'channelMuted',
+      'channel-hover': 'channelHover', 'channel-selected': 'channelSelected',
+      'channel-selected-bg': 'channelSelectedBg',
+      'channel-unread': 'channelUnread', 'channel-unread-hover': 'channelUnreadHover',
+    };
+    Object.entries(chMap).forEach(([cssVar, stateKey]) => {
+      const v = extract(cssVar);
+      if (v) { state[stateKey] = v; applied.push(`--${cssVar}`); }
+    });
+
+    // Detect addons from @import lines
+    if (css.includes('windows-titlebar.css')) { state.addonTitlebar = true; document.getElementById('addon-titlebar').checked = true; applied.push('Addon: Titlebar'); }
+    if (css.includes('HorizontalServerList.css')) { state.addonHorizontalServers = true; document.getElementById('addon-hsl').checked = true; applied.push('Addon: Horizontal Servers'); }
+    if (css.includes('RadialStatus.css')) { state.addonRadialStatus = true; document.getElementById('addon-radial').checked = true; applied.push('Addon: Radial Status'); }
+    if (css.includes('Discolored')) { state.addonDiscolored = true; document.getElementById('addon-discolored').checked = true; applied.push('Addon: Discolored'); }
+    if (css.includes('ServerColumns.css')) { state.addonServerColumns = true; document.getElementById('addon-servercolumns').checked = true; state.addonHorizontalServers = false; document.getElementById('addon-hsl').checked = false; applied.push('Addon: Server Columns'); }
+
+    // Platform detection
+    if (css.includes('vencord.css') && css.includes('betterdiscord.css')) {
+      state.platform = 'both';
+    } else if (css.includes('vencord.css')) {
+      state.platform = 'vencord';
+    } else if (css.includes('betterdiscord.css')) {
+      state.platform = 'bd';
+    }
+    document.querySelectorAll('.ptab').forEach(b => b.classList.toggle('active', b.dataset.platform === state.platform));
+
+    // Shading blocks for all 4 themes
+    const themeBlocks = [
+      { key: 'light', selector: 'theme-light' },
+      { key: 'dark', selector: 'theme-dark' },
+      { key: 'darker', selector: 'theme-darker' },
+      { key: 'midnight', selector: 'theme-midnight' },
+    ];
+    themeBlocks.forEach(({ key, selector }) => {
+      // Extract the block for this theme
+      const blockMatch = css.match(new RegExp(`:is\\(\\.${selector}[^{]*\\)\\s*\\{([^}]*)\\}`, 's'));
+      if (!blockMatch) return;
+      const block = blockMatch[1];
+      function extractFromBlock(varName) {
+        const m = block.match(new RegExp(`--${varName}\\s*:\\s*([^;]+);`));
+        return m ? m[1].trim() : null;
+      }
+      const shadingVars = [
+        ['background-shading','bgShading'],['card-shading','cardShading'],
+        ['popout-shading','popoutShading'],['modal-shading','modalShading'],
+        ['input-shading','inputShading'],
+      ];
+      shadingVars.forEach(([cssVar, stateKey]) => {
+        const v = extractFromBlock(cssVar);
+        if (!v) return;
+        const m = v.match(/rgba?\((\d+),\s*(\d+),\s*(\d+),?\s*([\d.]+)?\)/);
+        if (m) {
+          state.shading[key][stateKey] = {
+            color: rgbToHex(parseInt(m[1]), parseInt(m[2]), parseInt(m[3])),
+            opacity: m[4] !== undefined ? parseFloat(m[4]) : 1,
+          };
+        }
+      });
+      const nt = extractFromBlock('normal-text');
+      if (nt && isHexColor(nt)) state.shading[key].normalText = nt;
+      const mt = extractFromBlock('muted-text');
+      if (mt && isHexColor(mt)) state.shading[key].mutedText = mt;
+    });
+
+    // Refresh all controls
+    Object.entries(colorMap).forEach(([, stateKey]) => {
+      if (colorPickers[stateKey]) colorPickers[stateKey].setVal(state[stateKey]);
+    });
+    document.getElementById('ctrl-bg-url').value = state.bgUrl;
+    document.getElementById('ctrl-bg-position').value = state.bgPosition;
+    document.getElementById('ctrl-bg-size').value = state.bgSize;
+    document.getElementById('ctrl-bg-attachment').value = state.bgAttachment;
+    document.getElementById('ctrl-bg-shading-pct').value = state.bgShadingPct;
+    document.getElementById('shading-pct-label').textContent = state.bgShadingPct + '%';
+    document.getElementById('ctrl-home-icon').value = state.homeIcon;
+    document.getElementById('ctrl-home-size').value = state.homeSize;
+    document.getElementById('ctrl-main-font').value = state.mainFont;
+    document.getElementById('ctrl-code-font').value = state.codeFont;
+    Object.entries(chMap).forEach(([, stateKey]) => {
+      const id = 'ctrl-' + Object.keys(chMap).find(k => chMap[k] === stateKey).replace(/([A-Z])/g, m => '-' + m.toLowerCase());
+      // map stateKey back to input id
+    });
+    // Easier: just set all channel inputs directly
+    document.getElementById('ctrl-channel-normal').value = state.channelNormal;
+    document.getElementById('ctrl-channel-muted').value = state.channelMuted;
+    document.getElementById('ctrl-channel-hover').value = state.channelHover;
+    document.getElementById('ctrl-channel-selected').value = state.channelSelected;
+    document.getElementById('ctrl-channel-selected-bg').value = state.channelSelectedBg;
+    document.getElementById('ctrl-channel-unread').value = state.channelUnread;
+    document.getElementById('ctrl-channel-unread-hover').value = state.channelUnreadHover;
+    refreshShadingControls();
+    updatePreview();
+    updateCssOutput();
+
+    const resultEl = document.getElementById('import-result');
+    resultEl.style.display = 'block';
+    resultEl.innerHTML = `<strong style="color:var(--ed-success)">✓ Imported ${applied.length} setting${applied.length !== 1 ? 's' : ''}</strong>` +
+      (applied.length ? `<br><span style="opacity:0.7">${applied.join(', ')}</span>` : '') +
+      (skipped.length ? `<br><span style="color:var(--ed-danger)">Skipped (non-hex): ${skipped.join(', ')}</span>` : '');
+  };
+  reader.readAsText(file);
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────
