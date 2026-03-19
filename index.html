@@ -1103,8 +1103,8 @@
         </div>
         <div class="section-body">
           <div class="control-row">
-            <div class="control-label">Background Image URL</div>
-            <input type="text" class="text-input" id="ctrl-bg-url" placeholder="https://example.com/image.jpg">
+            <div class="control-label">Background Image / Gradient</div>
+            <input type="text" class="text-input" id="ctrl-bg-url" placeholder="https://… or linear-gradient(135deg, #e67a27, #2780e6)">
           </div>
           <div class="control-row">
             <div class="control-label">Position</div>
@@ -1877,19 +1877,15 @@ function hslToRgb(h, s, l) {
 function parseColorToRgb(color) {
   if (!color || typeof color !== 'string') return null;
   color = color.trim();
-  // Hex 6-digit
   if (/^#[0-9a-fA-F]{6}$/.test(color)) return hexToRgb(color);
-  // Hex 3-digit
   if (/^#[0-9a-fA-F]{3}$/.test(color)) {
     return { r: parseInt(color[1]+color[1],16), g: parseInt(color[2]+color[2],16), b: parseInt(color[3]+color[3],16) };
   }
-  // rgb / rgba
   const rgbM = color.match(/rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)/);
   if (rgbM) return { r: Math.round(parseFloat(rgbM[1])), g: Math.round(parseFloat(rgbM[2])), b: Math.round(parseFloat(rgbM[3])) };
-  // hsl / hsla
   const hslM = color.match(/hsla?\(\s*([\d.]+)\s*,\s*([\d.]+)%?\s*,\s*([\d.]+)%?/);
   if (hslM) return hslToRgb(parseFloat(hslM[1]), parseFloat(hslM[2]), parseFloat(hslM[3]));
-  // Browser fallback (handles named colors etc.)
+  // Browser fallback: handles named colors, etc.
   try {
     const el = document.createElement('div');
     el.style.color = color;
@@ -1906,6 +1902,25 @@ function isValidColor(v) {
   if (!v || typeof v !== 'string') return false;
   if (v.trim().startsWith('var(')) return false;
   return parseColorToRgb(v.trim()) !== null;
+}
+
+function isGradient(v) {
+  if (!v || typeof v !== 'string') return false;
+  return /^\s*(linear|radial|conic)-gradient\s*\(/i.test(v.trim());
+}
+
+// Build the CSS value for --background-image (and equivalent popout/modal vars)
+function toBgImageValue(val) {
+  if (!val || val === 'none') return 'none';
+  if (isGradient(val)) return val;
+  return `url(${val})`;
+}
+
+// Build the inline style background shorthand for the preview
+function toBgStyle(val, position, size) {
+  if (!val) return '';
+  if (isGradient(val)) return val; // gradients don't support center/cover shorthand cleanly
+  return `url(${val}) ${position}/${size} no-repeat`;
 }
 
 function resolveChannelVar(val) {
@@ -1943,7 +1958,7 @@ function makeColorPicker(containerId, stateKey, onChange) {
         <div class="color-swatch" id="${containerId}-swatch"></div>
         <input type="color" id="${containerId}-picker">
       </div>
-      <input type="text" class="hex-input" id="${containerId}-hex" maxlength="60" placeholder="#000000 or rgb() / hsl()">
+      <input type="text" class="hex-input" id="${containerId}-hex" maxlength="60" placeholder="#000000 · rgb() · hsl() · red">
     </div>`;
 
   const picker = document.getElementById(`${containerId}-picker`);
@@ -1954,9 +1969,9 @@ function makeColorPicker(containerId, stateKey, onChange) {
     if (val === undefined || val === null) return;
     const v = String(val).trim();
     if (isHexColor(v)) {
-      const cleanHex = v.startsWith('#') ? v : '#' + v;
-      picker.value = cleanHex.length === 7 ? cleanHex : picker.value;
-      swatch.style.background = cleanHex;
+      const clean = v.startsWith('#') ? v : '#' + v;
+      if (clean.length === 7) picker.value = clean;
+      swatch.style.background = clean;
     } else if (isValidColor(v)) {
       swatch.style.background = v;
       const rgb = parseColorToRgb(v);
@@ -1974,7 +1989,7 @@ function makeColorPicker(containerId, stateKey, onChange) {
     const v = hexIn.value.trim();
     if (isHexColor(v)) {
       swatch.style.background = v;
-      picker.value = v.length === 7 ? v : picker.value;
+      if (v.length === 7) picker.value = v;
     } else if (isValidColor(v)) {
       swatch.style.background = v;
       const rgb = parseColorToRgb(v);
@@ -2243,7 +2258,9 @@ function applyPreset(preset) {
 function updatePreview() {
   const sh = state.shading[state.discordTheme];
   const bgUrl = state.bgUrl;
-  const bgStyle = bgUrl ? `url(${bgUrl}) center/cover no-repeat` : '#1a1b1f';
+  const bgStyle = bgUrl ? toBgStyle(bgUrl, 'center', 'cover') : '#1a1b1f';
+  // For gradients, position/size/attachment controls don't apply
+  const isGrad = isGradient(bgUrl);
 
   // Sync theme color CSS vars so mobile nav + any CSS consumers stay in sync
   document.documentElement.style.setProperty('--theme-main', state.mainColor);
@@ -2251,6 +2268,12 @@ function updatePreview() {
 
   // Background
   document.getElementById('mock-bg').style.background = bgStyle;
+  // Position/size/repeat only make sense for images
+  if (!isGrad && bgUrl) {
+    document.getElementById('mock-bg').style.backgroundSize = state.bgSize;
+    document.getElementById('mock-bg').style.backgroundPosition = state.bgPosition;
+    document.getElementById('mock-bg').style.backgroundRepeat = 'no-repeat';
+  }
 
   // Apply filter to bg
   let filterStr = '';
@@ -2424,20 +2447,20 @@ ${themeClass} {
 
 function generateCSS() {
   const popoutImage = state.popoutTransparent ? 'none' :
-                      state.popoutLinkBg ? 'var(--background-image)' : `url(${state.popoutUrl})`;
+                      state.popoutLinkBg ? 'var(--background-image)' : toBgImageValue(state.popoutUrl);
   const popoutPosition = state.popoutLinkBg ? 'var(--background-position)' : state.popoutPosition;
   const popoutSize = state.popoutLinkBg ? 'var(--background-size)' : state.popoutSize;
   const popoutAttachment = state.popoutLinkBg ? 'var(--background-attachment)' : state.popoutAttachment;
   const popoutFilter = state.popoutLinkBg ? 'var(--background-filter)' : 'none';
 
   const modalImage = state.modalTransparent ? 'none' :
-                     state.modalLinkBg ? 'var(--background-image)' : `url(${state.modalUrl})`;
+                     state.modalLinkBg ? 'var(--background-image)' : toBgImageValue(state.modalUrl);
   const modalPosition = state.modalLinkBg ? 'var(--background-position)' : state.modalPosition;
   const modalSize = state.modalLinkBg ? 'var(--background-size)' : state.modalSize;
   const modalAttachment = state.modalLinkBg ? 'var(--background-attachment)' : state.modalAttachment;
   const modalFilter = state.modalLinkBg ? 'var(--background-filter)' : 'none';
 
-  const bgImageVal = state.bgTransparent ? 'none' : `url(${state.bgUrl})`;
+  const bgImageVal = state.bgTransparent ? 'none' : toBgImageValue(state.bgUrl);
   const filterVal = buildFilterValue();
 
   let css = `${getMeta()}
