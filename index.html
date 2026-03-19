@@ -746,6 +746,7 @@
   .css-value { color: #89ddff; }
   .css-selector { color: #82aaff; }
   .css-atrule { color: #c792ea; }
+  .css-punct { color: #89ddff; }
   .css-bracket { color: #89ddff; }
 
   /* ─── NOTIFICATION TOAST ──────────────────────────── */
@@ -1415,7 +1416,8 @@
             Transparent User Modal
           </label>
           <div class="info-note transparent-bd-warning" id="transparent-bd-warning" style="display:none;">
-            <strong>BetterDiscord users:</strong> Transparent backgrounds require enabling <em>Enable Transparency</em> in Discord's Appearance settings, and launching Discord with <code>--enable-transparent-visuals</code>. On Vencord, transparency works automatically via the VibrancyEffect or TransparentBackground plugin.
+            <strong>BetterDiscord users:</strong> Transparent backgrounds require enabling <em>Enable Transparency</em> in Discord's Appearance settings, and launching Discord with <code>--enable-transparent-visuals</code>. On Vencord, transparency works automatically via the VibrancyEffect or TransparentBackground plugin.<br><br>
+            <strong>Other client mods:</strong> Transparent background support varies — refer to your client mod's documentation to enable it.
           </div>
         </div>
       </div>
@@ -1865,6 +1867,15 @@ function colorOpacityToRgba(color, opacity) {
   return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity})`;
 }
 function isHexColor(v) { return typeof v === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(v.trim()); }
+
+// Wraps multi-word font names in double quotes; strips existing quotes first
+function quoteFontName(fontStack) {
+  return fontStack.split(',').map(f => {
+    f = f.trim().replace(/^["']|["']$/g, '');
+    if (f.includes(' ')) return `"${f}"`;
+    return f;
+  }).join(', ');
+}
 
 function hslToRgb(h, s, l) {
   s /= 100; l /= 100;
@@ -2401,15 +2412,15 @@ function getImports() {
   if (state.platform === 'vencord' || state.platform === 'both')
     lines.push(`@import url("https://clearvision.github.io/ClearVision-v7/vencord.css");`);
   if (state.addonTitlebar)
-    lines.push(`@import url('https://discordstyles.github.io/Addons/windows-titlebar.css');`);
+    lines.push(`@import url("https://discordstyles.github.io/Addons/windows-titlebar.css");`);
   if (state.addonHorizontalServers)
-    lines.push(`@import url('https://discordstyles.github.io/HorizontalServerList/HorizontalServerList.css');`);
+    lines.push(`@import url("https://discordstyles.github.io/HorizontalServerList/HorizontalServerList.css");`);
   if (state.addonRadialStatus)
-    lines.push(`@import url('https://discordstyles.github.io/RadialStatus/RadialStatus.css');`);
+    lines.push(`@import url("https://discordstyles.github.io/RadialStatus/RadialStatus.css");`);
   if (state.addonDiscolored)
-    lines.push(`@import url('https://nyri4.github.io/Discolored/main.css');`);
+    lines.push(`@import url("https://nyri4.github.io/Discolored/main.css");`);
   if (state.addonServerColumns)
-    lines.push(`@import url('https://mwittrien.github.io/BetterDiscordAddons/Themes/ServerColumns/ServerColumns.css');`);
+    lines.push(`@import url("https://mwittrien.github.io/BetterDiscordAddons/Themes/ServerColumns/ServerColumns.css");`);
   return lines.join('\n');
 }
 
@@ -2502,8 +2513,8 @@ ${getImports()}
   --home-icon: url(${state.homeIcon}); /* home button icon (link must be HTTPS) [default: url(https://clearvision.github.io/icons/discord.svg)]*/
   --home-size: ${state.homeSize}; /* home button icon size [default: cover] */
   /* FONTS */
-  --main-font: ${state.mainFont}; /* main font for app [default: gg sans, Helvetica Neue, Helvetica, Arial, sans-serif] */
-  --code-font: ${state.codeFont}; /* font for codeblocks [default: Consolas, Liberation Mono, Menlo, Courier, monospace] */
+  --main-font: ${quoteFontName(state.mainFont)}; /* main font for app [default: gg sans, Helvetica Neue, Helvetica, Arial, sans-serif] */
+  --code-font: ${quoteFontName(state.codeFont)}; /* font for codeblocks [default: Consolas, Liberation Mono, Menlo, Courier, monospace] */
   /* CHANNEL COLORS */
   --channel-normal: ${state.channelNormal}; /* channel text color [default: var(--interactive-text-default)] */
   --channel-muted: ${state.channelMuted}; /* muted channel text color [default: var(--interactive-muted)] */
@@ -2540,13 +2551,13 @@ function updateCssOutput() {
     // Comments
     .replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="css-comment">$1</span>')
     // @ rules
-    .replace(/(@\w+[^{;]*)/g, '<span class="css-atrule">$1</span>')
-    // Selectors (lines ending with {)
-    .replace(/^([^{}\/\n@][^{}]*\{)/gm, '<span class="css-selector">$1</span>')
-    // Properties
-    .replace(/(--[\w-]+)(\s*:)/g, '<span class="css-property">$1</span>$2')
-    // Values (after colon)
-    .replace(/:\s*([^;{}\n]+)(;)/g, ': <span class="css-value">$1</span>$2');
+    .replace(/^(@\w+[^{;\n]*)/gm, '<span class="css-atrule">$1</span>')
+    // Selectors — { excluded from span so punctuation rule colours it uniformly
+    .replace(/^([^{}\/\n@][^{}]*?)(\s*\{)/gm, '<span class="css-selector">$1</span><span class="css-punct">$2</span>')
+    // Closing braces
+    .replace(/^(\s*\})/gm, '<span class="css-punct">$1</span>')
+    // Properties + values combined — prevents matching https: inside url() strings
+    .replace(/(--[\w-]+)(\s*:\s*)([^;{}\n]+)(;)/g, '<span class="css-property">$1</span>$2<span class="css-value">$3</span>$4');
 
   document.getElementById('css-output').innerHTML = highlighted;
 }
