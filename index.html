@@ -746,6 +746,7 @@
   .css-value { color: #89ddff; }
   .css-selector { color: #82aaff; }
   .css-atrule { color: #c792ea; }
+  .css-punct { color: #89ddff; }
   .css-bracket { color: #89ddff; }
 
   /* ─── NOTIFICATION TOAST ──────────────────────────── */
@@ -2476,8 +2477,10 @@ function updateCssOutput() {
     .replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="css-comment">$1</span>')
     // @ rules (anchored to line start, won't cross newlines or bleed into meta comment)
     .replace(/^(@\w+[^{;\n]*)/gm, '<span class="css-atrule">$1</span>')
-    // Selectors (lines ending with {)
-    .replace(/^([^{}\/\n@][^{}]*\{)/gm, '<span class="css-selector">$1</span>')
+    // Selectors (lines ending with {) — { excluded from span so punctuation rule colours it uniformly
+    .replace(/^([^{}\/\n@][^{}]*?)(\s*\{)/gm, '<span class="css-selector">$1</span><span class="css-punct">$2</span>')
+    // Closing braces
+    .replace(/^(\s*\})/gm, '<span class="css-punct">$1</span>')
     // Properties + values combined — prevents matching https: inside url() strings
     .replace(/(--[\w-]+)(\s*:\s*)([^;{}\n]+)(;)/g, '<span class="css-property">$1</span>$2<span class="css-value">$3</span>$4');
 
